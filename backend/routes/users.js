@@ -12,7 +12,7 @@ router.get('/', function(req, res){
 router.post('/', function(req, res){
     //console.log('Adding user');
     User.create({
-        name: req.body.name,
+        username: req.body.username,
         password: req.body.password,
         rfid_tag: req.body.rfid_tag
     }).then(user => {
