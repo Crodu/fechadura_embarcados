@@ -2,13 +2,6 @@ var express = require('express');
 var User = require('../models').User;
 var router = express.Router();
 
-router.get('/', function(req, res){
-    //console.log('Getting all users');
-    User.findAll().then(users => {
-        res.status(200).json(users);
-    });
-});
-
 router.post('/', function(req, res){
     //console.log('Adding user');
     User.create({
@@ -20,5 +13,11 @@ router.post('/', function(req, res){
     });
 });
 
+router.get('/', function(req, res){
+    //console.log('Getting all users');
+    User.findAll().then(users => {
+        res.status(200).json(users);
+    });
+});
 
 module.exports = router;

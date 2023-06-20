@@ -13,6 +13,8 @@ var models = require("./models");
 var books = require('./routes/books');
 var users = require('./routes/users');
 var admin = require('./routes/admin');
+var management = require('./routes/management');
+var register = require('./routes/register');
 
 //Sync Database
 models.sequelize.sync().then(function() {
@@ -31,6 +33,8 @@ app.use(bodyParser.urlencoded({
 app.use('/books', books);
 app.use('/users', users);
 app.use('/admin', admin);
+app.use('/command', management);
+app.use('/register', register);
 
 // index path
 app.get('/', function(req, res){
