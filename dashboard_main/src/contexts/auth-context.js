@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 
+import { BACKEND_URL } from './api';
+
 const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
   SIGN_IN: 'SIGN_IN',
@@ -127,23 +129,26 @@ export const AuthProvider = (props) => {
     });
   };
 
-  const signIn = async (email, password) => {
-    if (email !== 'demo@devias.io' || password !== 'Password123!') {
+  const signIn = async (username, password) => {
+    // make a request to the backend to authenticate the user
+    const response = await fetch(`${BACKEND_URL}/admin/auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username: username, password })
+    });
+
+    if (response.status !== 200) {
       throw new Error('Please check your email and password');
     }
+    const user = await response.json();
 
     try {
       window.sessionStorage.setItem('authenticated', 'true');
     } catch (err) {
       console.error(err);
     }
-
-    const user = {
-      id: '5e86809283e28b96d2d38537',
-      avatar: '/assets/avatars/avatar-anika-visser.png',
-      name: 'Anika Visser',
-      email: 'anika.visser@devias.io'
-    };
 
     dispatch({
       type: HANDLERS.SIGN_IN,

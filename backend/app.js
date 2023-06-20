@@ -1,4 +1,5 @@
 var express = require('express');
+const cors = require('cors');
 var app = express();
 var bodyParser = require('body-parser');
 var sqlite = require('sqlite3');
@@ -10,6 +11,8 @@ var models = require("./models");
 
 // routes
 var books = require('./routes/books');
+var users = require('./routes/users');
+var admin = require('./routes/admin');
 
 //Sync Database
 models.sequelize.sync().then(function() {
@@ -18,6 +21,7 @@ models.sequelize.sync().then(function() {
     console.log(err)
 });
 
+app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: true
@@ -25,6 +29,8 @@ app.use(bodyParser.urlencoded({
 
 // register routes
 app.use('/books', books);
+app.use('/users', users);
+app.use('/admin', admin);
 
 // index path
 app.get('/', function(req, res){

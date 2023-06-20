@@ -79,13 +79,13 @@ export const Layout = (props) => {
               }}
               variant="h1"
             >
-              Welcome to{' '}
+              Sistemas Embarcados -{' '}
               <Box
                 component="a"
                 sx={{ color: '#15B79E' }}
                 target="_blank"
               >
-                Devias Kit
+                Projeto Fechadura Eletrônica
               </Box>
             </Typography>
             <Typography
@@ -93,12 +93,17 @@ export const Layout = (props) => {
               sx={{ mb: 3 }}
               variant="subtitle1"
             >
-              A professional kit that comes with ready-to-use MUI components.
+              André Soratto e Paulo Scariot
             </Typography>
-            <img
-              alt=""
-              src="/assets/auth-illustration.svg"
-            />
+            <Box
+              align="center"
+            >
+              <img
+                alt=""
+                src="/assets/fechadura.png"
+                width="50%"
+              />
+            </Box>
           </Box>
         </Grid>
       </Grid>

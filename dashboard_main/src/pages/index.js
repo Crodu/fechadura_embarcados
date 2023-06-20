@@ -10,14 +10,29 @@ import { OverviewTasksProgress } from 'src/sections/overview/overview-tasks-prog
 import { OverviewTotalCustomers } from 'src/sections/overview/overview-total-customers';
 import { OverviewTotalProfit } from 'src/sections/overview/overview-total-profit';
 import { OverviewTraffic } from 'src/sections/overview/overview-traffic';
+import { useEffect, useState } from 'react';
+import { BACKEND_URL } from 'src/contexts/api';
 
 const now = new Date();
 
-const Page = () => (
+const Page = () => {
+
+  const [users, setUsers] = useState([]);
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const response = await fetch(BACKEND_URL + '/users');
+      const users = await response.json();
+      setUsers(users);
+    };
+    fetchUsers();
+  }, []);
+
+  return (
   <>
     <Head>
       <title>
-        Overview | Devias Kit
+        Main Dashboard
       </title>
     </Head>
     <Box
@@ -32,7 +47,7 @@ const Page = () => (
           container
           spacing={3}
         >
-          <Grid
+          {/* <Grid
             xs={12}
             sm={6}
             lg={3}
@@ -44,18 +59,20 @@ const Page = () => (
               value="$24k"
             />
           </Grid>
+          */}
           <Grid
             xs={12}
             sm={6}
             lg={3}
           >
             <OverviewTotalCustomers
-              difference={16}
-              positive={false}
+              // difference={16}
+              // positive={false}
               sx={{ height: '100%' }}
-              value="1.6k"
+              value={users.length}
             />
           </Grid>
+          {/*
           <Grid
             xs={12}
             sm={6}
@@ -93,8 +110,8 @@ const Page = () => (
               ]}
               sx={{ height: '100%' }}
             />
-          </Grid>
-          <Grid
+          </Grid> */}
+          {/* <Grid
             xs={12}
             md={6}
             lg={4}
@@ -111,12 +128,12 @@ const Page = () => (
             lg={4}
           >
             Nothing here
-          </Grid>
+          </Grid> */}
         </Grid>
       </Container>
     </Box>
   </>
-);
+)};
 
 Page.getLayout = (page) => (
   <DashboardLayout>
