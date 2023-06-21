@@ -5,6 +5,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <ArduinoJson.h>
 
+#define BUZZER_PIN 15
+
 const char *ssid = "Domotica";
 const char *password = "32132132";
 
@@ -35,10 +37,14 @@ boolean cadastroBiometria();
 boolean uploadBiometria(int userId);
 void printLcd(String msg, byte linha);
 boolean cadastroRfid();
+void beepSucesso();
+void beepFracasso();
 
 void setup()
 {
     Serial.begin(9600);
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(BUZZER_PIN, HIGH);
 
     setupFingerprintSensor();
 
@@ -121,12 +127,14 @@ void loop()
                         if (result){
                             http.end();
                             printLcd("Sucesso !!!!",0);
+                            beepSucesso();
                             delay(2000);
                             // ESP.restart();
                         }
                         else {
                             printLcd("Erro !!!!",0);
                             printLcd("Tente novamente",1);
+                            beepFracasso();
                             delay(2000);
                         }
                     }
@@ -285,4 +293,20 @@ void printLcd(String msg, byte linha){
 
 boolean cadastroRfid(){
 
+}
+
+void beepSucesso(){
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(200);
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(200);
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(200);
+    digitalWrite(BUZZER_PIN, HIGH);    
+}
+
+void beepFracasso(){
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(1000);
+    digitalWrite(BUZZER_PIN, HIGH);
 }
