@@ -18,13 +18,21 @@ const now = new Date();
 const Page = () => {
 
   const [users, setUsers] = useState([]);
+  const [logs, setLogs] = useState([]);
+
+  const fetchLogs = async () => {
+    const response = await fetch(BACKEND_URL + '/authlog');
+    const logs = await response.json();
+    setLogs(logs);
+  };
   
   useEffect(() => {
     const fetchUsers = async () => {
       const response = await fetch(BACKEND_URL + '/users');
       const users = await response.json();
       setUsers(users);
-    };
+    };  
+    fetchLogs();
     fetchUsers();
   }, []);
 
@@ -72,8 +80,8 @@ const Page = () => {
               value={users.length}
             />
           </Grid>
-          {/*
-          <Grid
+          
+          {/* <Grid
             xs={12}
             sm={6}
             lg={3}
@@ -82,8 +90,8 @@ const Page = () => {
               sx={{ height: '100%' }}
               value={75.5}
             />
-          </Grid>
-          <Grid
+          </Grid> */}
+          {/* <Grid
             xs={12}
             sm={6}
             lg={3}
@@ -92,7 +100,7 @@ const Page = () => {
               sx={{ height: '100%' }}
               value="$15k"
             />
-          </Grid>
+          </Grid> */}
           <Grid
             xs={12}
             lg={8}
@@ -100,17 +108,19 @@ const Page = () => {
             <OverviewSales
               chartSeries={[
                 {
-                  name: 'This year',
-                  data: [18, 16, 5, 8, 3, 14, 14, 16, 17, 19, 18, 20]
+                  name: 'Success',
+                  data: logs.filter(log => log.success).map(log => log.count)
                 },
                 {
-                  name: 'Last year',
-                  data: [12, 11, 4, 6, 2, 9, 9, 10, 11, 12, 13, 13]
+                  name: 'Failed',
+                  data: logs.filter(log => !log.success).map(log => log.count)
                 }
               ]}
+              labels={logs.map(log => log.date)}
               sx={{ height: '100%' }}
+              onSync={fetchLogs}
             />
-          </Grid> */}
+          </Grid>
           {/* <Grid
             xs={12}
             md={6}

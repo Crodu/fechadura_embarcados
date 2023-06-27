@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
-import { subDays, subHours } from 'date-fns';
+import { sub, subDays, subHours } from 'date-fns';
 import ArrowDownOnSquareIcon from '@heroicons/react/24/solid/ArrowDownOnSquareIcon';
 import ArrowUpOnSquareIcon from '@heroicons/react/24/solid/ArrowUpOnSquareIcon';
 import PlusIcon from '@heroicons/react/24/solid/PlusIcon';
@@ -29,6 +29,7 @@ const Page = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   
 
@@ -39,7 +40,7 @@ const Page = () => {
       setUsers(users);
     };
     fetchUsers();
-  }, []);
+  }, [submitting]);
 
   const useCustomers = (page, rowsPerPage) => {
     return useMemo(
@@ -72,7 +73,7 @@ const Page = () => {
     <>
       <Head>
         <title>
-          Customers | Devias Kit
+          Users
         </title>
       </Head>
       <Box
@@ -91,34 +92,8 @@ const Page = () => {
             >
               <Stack spacing={1}>
                 <Typography variant="h4">
-                  Customers
+                  Users
                 </Typography>
-                <Stack
-                  alignItems="center"
-                  direction="row"
-                  spacing={1}
-                >
-                  <Button
-                    color="inherit"
-                    startIcon={(
-                      <SvgIcon fontSize="small">
-                        <ArrowUpOnSquareIcon />
-                      </SvgIcon>
-                    )}
-                  >
-                    Import
-                  </Button>
-                  <Button
-                    color="inherit"
-                    startIcon={(
-                      <SvgIcon fontSize="small">
-                        <ArrowDownOnSquareIcon />
-                      </SvgIcon>
-                    )}
-                  >
-                    Export
-                  </Button>
-                </Stack>
               </Stack>
               <div>
                 <Button
@@ -152,6 +127,7 @@ const Page = () => {
         </Container>
         <ModalAdd 
           open={open}
+          onSubmit={() => setSubmitting(submitting => !submitting)}
           setOpen={setOpen}
         />
       </Box>

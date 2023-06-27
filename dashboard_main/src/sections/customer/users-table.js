@@ -101,7 +101,7 @@ export const UsersTable = (props) => {
                       {user.rfid_tag}
                     </TableCell>
                     <TableCell>
-                      {user.last_entry}
+                      {user.AuthLogs.length > 0 ? format(new Date(user.AuthLogs[0].createdAt), 'dd/MM/yyyy HH:mm:ss') : 'N/A' }
                     </TableCell>
                   </TableRow>
                 );

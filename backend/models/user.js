@@ -11,5 +11,10 @@ module.exports = function(sequelize, Sequalize) {
     },{
         timestamps: false
     });
+
+    UserSchema.associate = function(models){
+        UserSchema.hasMany(models.AuthLog, {foreignKey: 'userId'});
+    }
+
     return UserSchema;
 }

@@ -15,6 +15,7 @@ var users = require('./routes/users');
 var admin = require('./routes/admin');
 var management = require('./routes/management');
 var register = require('./routes/register');
+var authLog = require('./routes/authLog');
 
 //Sync Database
 models.sequelize.sync().then(function() {
@@ -33,6 +34,7 @@ app.use(bodyParser.urlencoded({
 app.use('/books', books);
 app.use('/users', users);
 app.use('/admin', admin);
+app.use('/authlog', authLog);
 app.use('/command', management);
 app.use('/register', register);
 
