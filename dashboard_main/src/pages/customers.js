@@ -10,8 +10,9 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { UsersTable } from 'src/sections/customer/users-table';
 import { CustomersSearch } from 'src/sections/customer/customers-search';
 import { applyPagination } from 'src/utils/apply-pagination';
-import { BACKEND_URL } from 'src/contexts/api';
+import { BACKEND_URL, setCommand } from 'src/contexts/api';
 import { ModalAdd } from 'src/sections/customer/modal-add';
+import { useAuth } from 'src/hooks/use-auth';
 
 const now = new Date();
 
@@ -30,8 +31,8 @@ const Page = () => {
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
-  
+
+  const auth = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -122,6 +123,8 @@ const Page = () => {
               page={page}
               rowsPerPage={rowsPerPage}
               selected={customersSelection.selected}
+              setCommand={setCommand}
+              auth={auth}
             />
           </Stack>
         </Container>

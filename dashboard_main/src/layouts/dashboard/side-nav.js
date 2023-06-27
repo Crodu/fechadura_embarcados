@@ -17,11 +17,14 @@ import { Logo } from 'src/components/logo';
 import { Scrollbar } from 'src/components/scrollbar';
 import { items } from './config';
 import { SideNavItem } from './side-nav-item';
+import { useAuth } from 'src/hooks/use-auth';
 
 export const SideNav = (props) => {
   const { open, onClose } = props;
+  const auth = useAuth();
   const pathname = usePathname();
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
+  const currentStatus = auth.status;
 
   const content = (
     <Scrollbar
@@ -104,6 +107,39 @@ export const SideNav = (props) => {
           </Stack>
         </Box>
         <Divider sx={{ borderColor: 'neutral.700' }} />
+        <Box
+          sx={{
+            px: 2,
+            py: 3
+          }}
+        >
+          <Typography
+            color="neutral.100"
+            variant="subtitle2"
+          >
+            Current Status:
+          </Typography>
+          <Typography
+            color="neutral.500"
+            variant="body2"
+            component={'pre'}
+            sx={{
+              overflowWrap: 'anywhere'
+            }}
+          >
+            {JSON.stringify(currentStatus, null, "\t")}
+          </Typography>
+          <Button
+            fullWidth
+            sx={{ mt: 2 }}
+            variant="contained"
+            onClick={() => {
+              auth.updateStatus();
+            }}
+          >
+            Update
+          </Button>
+        </Box>
       </Box>
     </Scrollbar>
   );
