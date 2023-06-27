@@ -17,11 +17,14 @@ import { Logo } from 'src/components/logo';
 import { Scrollbar } from 'src/components/scrollbar';
 import { items } from './config';
 import { SideNavItem } from './side-nav-item';
+import { useAuth } from 'src/hooks/use-auth';
 
 export const SideNav = (props) => {
   const { open, onClose } = props;
+  const auth = useAuth();
   const pathname = usePathname();
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
+  const currentStatus = auth.status;
 
   const content = (
     <Scrollbar
@@ -44,49 +47,29 @@ export const SideNav = (props) => {
       >
         <Box sx={{ p: 3 }}>
           <Box
-            component={NextLink}
-            href="/"
-            sx={{
-              display: 'inline-flex',
-              height: 32,
-              width: 32
-            }}
-          >
-            <Logo />
-          </Box>
-          <Box
             sx={{
               alignItems: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              borderRadius: 1,
-              cursor: 'pointer',
               display: 'flex',
-              justifyContent: 'space-between',
-              mt: 2,
-              p: '12px'
             }}
           >
-            <div>
-              <Typography
-                color="inherit"
-                variant="subtitle1"
-              >
-                Devias
-              </Typography>
-              <Typography
-                color="neutral.400"
-                variant="body2"
-              >
-                Production
-              </Typography>
-            </div>
-            <SvgIcon
-              fontSize="small"
-              sx={{ color: 'neutral.500' }}
+            <Box
+              component={NextLink}
+              href="/"
+              sx={{
+                display: 'inline-flex',
+                height: 32,
+                width: 32
+              }}
             >
-              <ChevronUpDownIcon />
-            </SvgIcon>
-          </Box>
+              <Logo />
+            </Box>
+            <Typography
+                color="common.white"
+                sx={{ ml: 2 }}
+            >
+                  Dashboard
+            </Typography>
+          </Box>          
         </Box>
         <Divider sx={{ borderColor: 'neutral.700' }} />
         <Box
@@ -134,44 +117,27 @@ export const SideNav = (props) => {
             color="neutral.100"
             variant="subtitle2"
           >
-            Need more features?
+            Current Status:
           </Typography>
           <Typography
             color="neutral.500"
             variant="body2"
-          >
-            Check out our Pro solution template.
-          </Typography>
-          <Box
+            component={'pre'}
             sx={{
-              display: 'flex',
-              mt: 2,
-              mx: 'auto',
-              width: '160px',
-              '& img': {
-                width: '100%'
-              }
+              overflowWrap: 'anywhere'
             }}
           >
-            <img
-              alt="Go to pro"
-              src="/assets/devias-kit-pro.png"
-            />
-          </Box>
+            {JSON.stringify(currentStatus, null, "\t")}
+          </Typography>
           <Button
-            component="a"
-            endIcon={(
-              <SvgIcon fontSize="small">
-                <ArrowTopRightOnSquareIcon />
-              </SvgIcon>
-            )}
             fullWidth
-            href="https://material-kit-pro-react.devias.io/"
             sx={{ mt: 2 }}
-            target="_blank"
             variant="contained"
+            onClick={() => {
+              auth.updateStatus();
+            }}
           >
-            Pro Live Preview
+            Update
           </Button>
         </Box>
       </Box>

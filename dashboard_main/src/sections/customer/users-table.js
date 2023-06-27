@@ -3,9 +3,11 @@ import { format } from 'date-fns';
 import {
   Avatar,
   Box,
+  Button,
   Card,
   Checkbox,
   Stack,
+  SvgIcon,
   Table,
   TableBody,
   TableCell,
@@ -16,6 +18,7 @@ import {
 } from '@mui/material';
 import { Scrollbar } from 'src/components/scrollbar';
 import { getInitials } from 'src/utils/get-initials';
+import PlusIcon from '@heroicons/react/24/solid/PlusIcon';
 
 export const UsersTable = (props) => {
   const {
@@ -29,7 +32,9 @@ export const UsersTable = (props) => {
     onSelectOne,
     page = 0,
     rowsPerPage = 0,
-    selected = []
+    selected = [],
+    setCommand = () => {},
+    auth,
   } = props;
 
   const selectedSome = (selected.length > 0) && (selected.length < items.length);
@@ -67,6 +72,12 @@ export const UsersTable = (props) => {
                 <TableCell>
                   Last Entry
                 </TableCell>
+                <TableCell>
+                  Biometrics
+                </TableCell>
+                <TableCell>
+                  RFID
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -101,7 +112,30 @@ export const UsersTable = (props) => {
                       {user.rfid_tag}
                     </TableCell>
                     <TableCell>
-                      {user.last_entry}
+                      {user.AuthLogs.length > 0 ? format(new Date(user.AuthLogs[0].createdAt), 'dd/MM/yyyy HH:mm:ss') : 'N/A' }
+                    </TableCell>
+                    <TableCell>
+                      {user.posicao ? 'Yes' : 'No'}
+                      {!user.posicao && (
+                        <Button
+                          startIcon={(
+                            <SvgIcon fontSize="small">
+                              <PlusIcon />
+                            </SvgIcon>
+                          )}
+                          variant="text"
+                          sx={{ ml: 2 }}
+                          onClick={() => {
+                            setCommand({
+                              currentSensor: 'biometria',
+                              isRegistering: true,
+                              userId: user.id,
+                            }, auth);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

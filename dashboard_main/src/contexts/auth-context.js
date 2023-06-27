@@ -6,13 +6,15 @@ import { BACKEND_URL } from './api';
 const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
   SIGN_IN: 'SIGN_IN',
-  SIGN_OUT: 'SIGN_OUT'
+  SIGN_OUT: 'SIGN_OUT',
+  SET_STATUS: 'SET_STATUS',
 };
 
 const initialState = {
   isAuthenticated: false,
   isLoading: true,
-  user: null
+  user: null,
+  status: {},
 };
 
 const handlers = {
@@ -49,6 +51,13 @@ const handlers = {
       ...state,
       isAuthenticated: false,
       user: null
+    };
+  },
+  [HANDLERS.SET_STATUS]: (state, action) => {
+    const status = action.payload;
+    return {
+      ...state,
+      status
     };
   }
 };
@@ -129,6 +138,16 @@ export const AuthProvider = (props) => {
     });
   };
 
+  const updateStatus = async () => {
+    const response = await fetch(BACKEND_URL + '/command')
+
+    const status = await response.json();
+    dispatch({
+      type: HANDLERS.SET_STATUS,
+      payload: status
+    });
+  };
+
   const signIn = async (username, password) => {
     // make a request to the backend to authenticate the user
     const response = await fetch(`${BACKEND_URL}/admin/auth`, {
@@ -173,7 +192,8 @@ export const AuthProvider = (props) => {
         skip,
         signIn,
         signUp,
-        signOut
+        signOut,
+        updateStatus
       }}
     >
       {children}

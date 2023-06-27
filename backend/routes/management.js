@@ -8,10 +8,21 @@ router.get('/', function(req, res){
         cadastro: false,
         sensor: 'biometria',
     }
-    Status.findOne().then(user => {
-        res.status(200).json(user);
+    Status.findOne().then(status => {
+        res.status(200).json(status);
     });
     // res.status(200).json(comando);
+});
+
+router.post('/', function(req, res){
+    //console.log('updating command');
+    Status.update({
+        isRegistering: req.body.isRegistering,
+        currentSensor: req.body.currentSensor,
+        userId: req.body.userId,
+    }, {where: {id: 1}}).then(status => {
+        res.status(200).json(status);
+    });
 });
 
 module.exports = router;

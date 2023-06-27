@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
-import { subDays, subHours } from 'date-fns';
+import { sub, subDays, subHours } from 'date-fns';
 import ArrowDownOnSquareIcon from '@heroicons/react/24/solid/ArrowDownOnSquareIcon';
 import ArrowUpOnSquareIcon from '@heroicons/react/24/solid/ArrowUpOnSquareIcon';
 import PlusIcon from '@heroicons/react/24/solid/PlusIcon';
@@ -10,8 +10,9 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { UsersTable } from 'src/sections/customer/users-table';
 import { CustomersSearch } from 'src/sections/customer/customers-search';
 import { applyPagination } from 'src/utils/apply-pagination';
-import { BACKEND_URL } from 'src/contexts/api';
+import { BACKEND_URL, setCommand } from 'src/contexts/api';
 import { ModalAdd } from 'src/sections/customer/modal-add';
+import { useAuth } from 'src/hooks/use-auth';
 
 const now = new Date();
 
@@ -29,8 +30,9 @@ const Page = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
-  
-  
+  const [submitting, setSubmitting] = useState(false);
+
+  const auth = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -39,7 +41,7 @@ const Page = () => {
       setUsers(users);
     };
     fetchUsers();
-  }, []);
+  }, [submitting]);
 
   const useCustomers = (page, rowsPerPage) => {
     return useMemo(
@@ -72,7 +74,7 @@ const Page = () => {
     <>
       <Head>
         <title>
-          Customers | Devias Kit
+          Users
         </title>
       </Head>
       <Box
@@ -91,34 +93,8 @@ const Page = () => {
             >
               <Stack spacing={1}>
                 <Typography variant="h4">
-                  Customers
+                  Users
                 </Typography>
-                <Stack
-                  alignItems="center"
-                  direction="row"
-                  spacing={1}
-                >
-                  <Button
-                    color="inherit"
-                    startIcon={(
-                      <SvgIcon fontSize="small">
-                        <ArrowUpOnSquareIcon />
-                      </SvgIcon>
-                    )}
-                  >
-                    Import
-                  </Button>
-                  <Button
-                    color="inherit"
-                    startIcon={(
-                      <SvgIcon fontSize="small">
-                        <ArrowDownOnSquareIcon />
-                      </SvgIcon>
-                    )}
-                  >
-                    Export
-                  </Button>
-                </Stack>
               </Stack>
               <div>
                 <Button
@@ -147,11 +123,14 @@ const Page = () => {
               page={page}
               rowsPerPage={rowsPerPage}
               selected={customersSelection.selected}
+              setCommand={setCommand}
+              auth={auth}
             />
           </Stack>
         </Container>
         <ModalAdd 
           open={open}
+          onSubmit={() => setSubmitting(submitting => !submitting)}
           setOpen={setOpen}
         />
       </Box>

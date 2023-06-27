@@ -18,7 +18,7 @@ const style = {
     p: 4,
   };
 
-export const ModalAdd = ({open, setOpen, props}) => {
+export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
 
     const handleClose = () => {
         setOpen(false);
@@ -50,6 +50,8 @@ export const ModalAdd = ({open, setOpen, props}) => {
                 },
                 body: JSON.stringify({ username: values.username, password: values.password, rfid_tag: values.rfid_tag})
               });
+            handleClose();
+            onSubmit();
           } catch (err) {
             helpers.setStatus({ success: false });
             helpers.setErrors({ submit: err.message });
