@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <LiquidCrystal_I2C.h>
 #include <ArduinoJson.h>
+#include <MFRC522.h>
 
 #define BUZZER_PIN 15
 
@@ -29,6 +30,8 @@ Adafruit_Fingerprint fingerprintSensor = Adafruit_Fingerprint(&Serial2, password
 
 LiquidCrystal_I2C lcd(0x27,16,2);
 
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+
 //endereço do servidor na qual sera enviado as informações de cadastro
 String ipServer = "http://192.168.0.101:8080";
 
@@ -39,6 +42,9 @@ void printLcd(String msg, byte linha);
 boolean cadastroRfid();
 void beepSucesso();
 void beepFracasso();
+boolean cadastroRfid();
+boolean uploadRfid(int userId);
+void setupRfid();
 
 void setup()
 {
@@ -47,6 +53,7 @@ void setup()
     digitalWrite(BUZZER_PIN, HIGH);
 
     setupFingerprintSensor();
+    setupRfid();
 
     lcd.init();
     lcd.backlight();
@@ -141,7 +148,24 @@ void loop()
                 }
                 else if (sensor == "rfid")
                 {
-
+                    boolean result = false;
+                    while(!result){
+                        result = cadastroRfid();
+                        if (result){
+                            result = uploadRfid(userId);
+                        }
+                        if (result){
+                            http.end();
+                            printLcd("Sucesso !!!!",0);
+                            delay(2000);
+                            // ESP.restart();
+                        }
+                        else {
+                            printLcd("Erro !!!!",0);
+                            printLcd("Tente novamente",1);
+                            delay(2000);
+                        }
+                    }
                 }
             }
         }
@@ -291,8 +315,56 @@ void printLcd(String msg, byte linha){
     lcd.print(msg);
 }
 
-boolean cadastroRfid(){
+boolean uploadRfid(int userId){
+    if ((WiFi.status() == WL_CONNECTED))
+    {
+        HTTPClient http;
+        http.begin(ipServer+"/register?userId="+String(userId)+"&sensor=rfid&data="+userRFID);
+        int httpCode = http.GET();
 
+        if (httpCode > 0)
+        {
+            Serial.print("HTTP Response code: ");
+            Serial.println(httpCode);
+            String payload = http.getString();
+            Serial.println(payload);
+        }
+        else
+        {
+            Serial.println("Error on HTTP request");
+            return false;
+        }
+
+        http.end();
+    }
+    return true;
+}
+
+void setupRfid(){
+    SPI.begin();
+    mfrc522.PCD_Init();
+}
+
+boolean cadastroRfid(){
+    MFRC522::MIFARE_Key key;
+    for (byte i = 0; i < 6; i++) key.keyByte[i] = 0xFF;
+    byte block;
+    byte len;
+    MFRC522::StatusCode status;
+    if ( ! mfrc522.PICC_IsNewCardPresent()) {
+        return false;
+    }
+    if ( ! mfrc522.PICC_ReadCardSerial()) {
+        return false;
+    }
+    String userid;
+    for (byte i = 0; i < mfrc522.uid.size; i++) {
+        userid += String(mfrc522.uid.uidByte[i], HEX);
+    }
+    mfrc522.PICC_HaltA();
+    mfrc522.PCD_StopCrypto1();
+    userRFID = userid;
+    return true;
 }
 
 void beepSucesso(){
