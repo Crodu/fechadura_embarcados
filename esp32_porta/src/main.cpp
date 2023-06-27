@@ -39,6 +39,7 @@ IPAddress secondaryDNS(8, 8, 4, 4);
 String header;
 String biometria;
 String senhaTeclado = "";
+int lastpos = 1;
 
 unsigned long currentTime = millis();
 unsigned long previousTime = 0;
@@ -50,7 +51,7 @@ boolean cadastro = false;
 
 TaskHandle_t Task2;
 
-String ipServer = "http://192.168.0.105:3000";
+String ipServer = "http://192.168.0.101:3000";
 
 void setupFingerprintSensor();
 void getAllFingerprints();
@@ -89,8 +90,6 @@ void setup()
     Serial.println(WiFi.localIP());
     // server.begin();
 
-    getAllFingerprints();
-
     xTaskCreatePinnedToCore(
         Task2code,
         "Task2",
@@ -100,17 +99,16 @@ void setup()
         &Task2,
         1);
 
-    setupFingerprintSensor();
 }
 
 void loop()
 {
-    digitalWrite(rele, HIGH);
-    Serial.println("HIGH");
-    delay(5000);
-    digitalWrite(rele, LOW);
-    Serial.println("LOW");
-    delay(5000);
+    // digitalWrite(rele, HIGH);
+    // Serial.println("HIGH");
+    // delay(5000);
+    // digitalWrite(rele, LOW);
+    // Serial.println("LOW");
+    // delay(5000);
 
     LDR_Val = analogRead(LDR_PIN);
     if (LDR_Val > 2000 && digitalRead(PIR_PIN) == HIGH)
@@ -171,21 +169,6 @@ void loop()
         }
     }
 
-    while (fingerprintSensor.getImage() != FINGERPRINT_OK)
-        ;
-
-    if (fingerprintSensor.image2Tz() != FINGERPRINT_OK)
-    {
-        Serial.println(F("Erro image2Tz"));
-        return;
-    }
-
-    if (fingerprintSensor.fingerFastSearch() != FINGERPRINT_OK)
-    {
-        Serial.println(F("Digital não encontrada"));
-        return;
-    }
-
     // if(!cadastro){
     //     Serial.println(F("Encoste o dedo no sensor"));
 
@@ -225,15 +208,39 @@ void setupFingerprintSensor()
 
 void Task2code(void *pvParameters)
 {
+    setupFingerprintSensor();
+    getAllFingerprints();
+
     for (;;)
     {
-        if (WiFi.status() == WL_CONNECTED && currentTime - previousTime > timeoutTime)
+        uint8_t result = fingerprintSensor.getImage();
+        if (result == FINGERPRINT_OK){
+            if (fingerprintSensor.image2Tz() != FINGERPRINT_OK)
+            {
+                Serial.println(F("Erro image2Tz"));
+            }
+
+            if (fingerprintSensor.fingerFastSearch() != FINGERPRINT_OK)
+            {
+                Serial.println(F("Digital não encontrada"));
+            }
+
+            Serial.print(F("Digital encontrada com confiança de "));
+            Serial.print(fingerprintSensor.confidence);
+            Serial.print(F(" na posição "));
+            Serial.println(fingerprintSensor.fingerID);
+        }
+
+        // if (WiFi.status() == WL_CONNECTED && currentTime - previousTime > timeoutTime)
+        if (WiFi.status() == WL_CONNECTED && digitalRead(PIR_PIN) == HIGH)
         {
+            Serial.println("sensor pir acionado");
             previousTime = currentTime;
             HTTPClient http;
 
-            http.begin(ipServer + "/getbiometrias");
+            http.begin(ipServer + "/lastpos");
             int httpCode = http.GET();
+            int posicao = 0;
 
             if (httpCode > 0)
             {
@@ -243,59 +250,107 @@ void Task2code(void *pvParameters)
                 Serial.print("payload: ");
                 Serial.println(payload);
 
-                DynamicJsonDocument doc(600);
+                DynamicJsonDocument doc(100);
                 doc["heap"] = ESP.getFreeHeap();
                 deserializeJson(doc, payload);
-                String acao = doc["acao"];
-                String pacote1 = doc["pacote1"];
-                String pacote2 = doc["pacote2"];
-                String pacote3 = doc["pacote3"];
-                String pacote4 = doc["pacote4"];
-                String posicao = doc["posicao"];
+                posicao = doc["posicao"];
 
-                Serial.print("acao: ");
-                Serial.println(cadastro);
-                Serial.print("pacote1: ");
-                Serial.println(pacote1);
-                Serial.print("pacote2: ");
-                Serial.println(pacote2);
-                Serial.print("pacote3: ");
-                Serial.println(pacote3);
-                Serial.print("pacote4: ");
-                Serial.println(pacote4);
                 Serial.print("posicao: ");
-                Serial.println(posicao);
-
-                // if (cadastro)
-                // {
-                //     if (sensor == "biometria")
-                //     {
-                //         boolean result = false;
-                //         while(!result){
-                //             result = cadastroBiometria();
-                //             if (result){
-                //                 result = uploadBiometria();
-                //             }
-                //             if (result){
-                //                 http.end();
-                //                 printLcd("Sucesso !!!!",0);
-                //                 delay(2000);
-                //                 ESP.restart();
-                //             }
-                //             else {
-                //                 printLcd("Erro !!!!",0);
-                //                 printLcd("Tente novamente",1);
-                //                 delay(2000);
-                //             }
-                //         }
-                //     }
-                // }
+                Serial.println(posicao);                
             }
             else
             {
                 Serial.println("Error on HTTP request");
             }
             http.end();
+
+            if (posicao != lastpos)
+            {
+                for (int i = lastpos+1; i <= posicao; i++)
+                {
+                    Serial.println(ipServer + "/users/template?pos=" + String(i));
+                    http.begin(ipServer + "/users/template?pos=" + String(i));
+                    int httpCode = http.GET();
+
+                    if (httpCode > 0)
+                    {
+                        Serial.print("httpCode: ");
+                        Serial.println(httpCode);
+                        String payload = http.getString();
+
+                        DynamicJsonDocument doc(2048);
+                        doc["heap"] = ESP.getFreeHeap();
+                        deserializeJson(doc, payload);
+                        int posicao = doc["posicao"];
+                        String pacote1 = doc["pacote1"];
+                        String pacote2 = doc["pacote2"];
+                        String pacote3 = doc["pacote3"];
+                        String pacote4 = doc["pacote4"];
+
+                        uint8_t packed1[130];
+                        uint8_t packed2[130];
+                        uint8_t packed3[130];
+                        uint8_t packed4[108];
+
+                        int inicio = 0;
+                        int fim = -1;
+                        uint8_t uint = 0;
+                        for (size_t i = 0; i < 130; i++)
+                        {
+                            inicio = fim;
+                            fim = pacote1.indexOf(",",inicio+1);
+                            uint = pacote1.substring(inicio+1,fim).toInt();
+                            packed1[i]=uint;
+                        }
+                        
+                        inicio = 0;
+                        fim = -1;
+                        for (size_t i = 0; i < 130; i++)
+                        {
+                            inicio = fim;
+                            fim = pacote2.indexOf(",",inicio+1);
+                            uint = pacote2.substring(inicio+1,fim).toInt();
+                            packed2[i]=uint;
+                        }
+
+                        inicio = 0;
+                        fim = -1;
+                        for (size_t i = 0; i < 130; i++)
+                        {
+                            inicio = fim;
+                            fim = pacote3.indexOf(",",inicio+1);
+                            uint = pacote3.substring(inicio+1,fim).toInt();
+                            packed3[i]=uint;
+                        }
+
+                        inicio = 0;
+                        fim = -1;
+                        for (size_t i = 0; i < 108; i++)
+                        {
+                            inicio = fim;
+                            fim = pacote4.indexOf(",",inicio+1);
+                            uint = pacote4.substring(inicio+1,fim).toInt();
+                            packed4[i]=uint;
+                        }
+
+                        if (posicao == NULL)
+                        {
+                            Serial.println("posicao igual a null");
+                            break;
+                        }
+                        else
+                        {
+                            lastpos = posicao;
+                            uploadFingerprintTemplate(packed1, packed2, packed3, packed4, posicao);
+                        }
+                    }
+                    else
+                    {
+                        Serial.println("Error on HTTP request");
+                    }
+                    http.end();
+                }
+            }
         }
     }
 }
@@ -311,10 +366,10 @@ void getAllFingerprints()
     if (WiFi.status() == WL_CONNECTED)
     {
         HTTPClient http;
-
-        for (int i = 1; i < 150; i++)
+        for (int i = 1; i < 5; i++)
         {
-            http.begin(ipServer + "/getbiometria?biometria=" + String(i));
+            Serial.println(ipServer + "/users/template?pos=" + String(i));
+            http.begin(ipServer + "/users/template?pos=" + String(i));
             int httpCode = http.GET();
 
             if (httpCode > 0)
@@ -322,26 +377,71 @@ void getAllFingerprints()
                 Serial.print("httpCode: ");
                 Serial.println(httpCode);
                 String payload = http.getString();
-                Serial.print("payload: ");
-                Serial.println(payload);
 
-                DynamicJsonDocument doc(550);
+                DynamicJsonDocument doc(2048);
                 doc["heap"] = ESP.getFreeHeap();
                 deserializeJson(doc, payload);
+                int posicao = doc["posicao"];
                 String pacote1 = doc["pacote1"];
                 String pacote2 = doc["pacote2"];
                 String pacote3 = doc["pacote3"];
                 String pacote4 = doc["pacote4"];
-                String posicao = doc["posicao"];
 
-                if (posicao == "null")
+                uint8_t packed1[130];
+                uint8_t packed2[130];
+                uint8_t packed3[130];
+                uint8_t packed4[108];
+
+                int inicio = 0;
+                int fim = -1;
+                uint8_t uint = 0;
+                for (size_t i = 0; i < 130; i++)
+                {
+                    inicio = fim;
+                    fim = pacote1.indexOf(",",inicio+1);
+                    uint = pacote1.substring(inicio+1,fim).toInt();
+                    packed1[i]=uint;
+                }
+                
+                inicio = 0;
+                fim = -1;
+                for (size_t i = 0; i < 130; i++)
+                {
+                    inicio = fim;
+                    fim = pacote2.indexOf(",",inicio+1);
+                    uint = pacote2.substring(inicio+1,fim).toInt();
+                    packed2[i]=uint;
+                }
+
+                inicio = 0;
+                fim = -1;
+                for (size_t i = 0; i < 130; i++)
+                {
+                    inicio = fim;
+                    fim = pacote3.indexOf(",",inicio+1);
+                    uint = pacote3.substring(inicio+1,fim).toInt();
+                    packed3[i]=uint;
+                }
+
+                inicio = 0;
+                fim = -1;
+                for (size_t i = 0; i < 108; i++)
+                {
+                    inicio = fim;
+                    fim = pacote4.indexOf(",",inicio+1);
+                    uint = pacote4.substring(inicio+1,fim).toInt();
+                    packed4[i]=uint;
+                }
+
+                if (posicao == NULL)
                 {
                     Serial.println("posicao igual a null");
                     break;
                 }
                 else
                 {
-                    uploadFingerprintTemplate(pacote1, pacote2, pacote3, pacote4, posicao);
+                    lastpos = posicao;
+                    uploadFingerprintTemplate(packed1, packed2, packed3, packed4, posicao);
                 }
             }
             else
@@ -357,6 +457,7 @@ void getAllFingerprints()
 uint8_t uploadFingerprintTemplate(uint8_t packet1[130], uint8_t packet2[130], uint8_t packet3[130], uint8_t packet4[108], int posicao)
 {
     Serial.println("------------------------------------");
+    Serial.println("upload biometria");
     setupFingerprintSensor();
 
     uint8_t p = fingerprintSensor.uploadModelPercobaan(packet1, packet2, packet3, packet4);
