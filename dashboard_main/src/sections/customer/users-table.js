@@ -137,6 +137,29 @@ export const UsersTable = (props) => {
                         </Button>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {user.rfid_tag ? 'Yes' : 'No'}
+                      {!user.rfid_tag && (
+                        <Button
+                          startIcon={(
+                            <SvgIcon fontSize="small">
+                              <PlusIcon />
+                            </SvgIcon>
+                          )}
+                          variant="text"
+                          sx={{ ml: 2 }}
+                          onClick={() => {
+                            setCommand({
+                              currentSensor: 'rfid',
+                              isRegistering: true,
+                              userId: user.id,
+                            }, auth);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}
