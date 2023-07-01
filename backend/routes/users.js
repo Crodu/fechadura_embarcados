@@ -35,6 +35,8 @@ router.get('/', function(req, res){
 router.get('/auth', function(req, res){
     let {
         password,
+        rfid,
+        override,
     } = req.query
 
     User.findOne({where: {password: password}}).then(user => {

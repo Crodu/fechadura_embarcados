@@ -1,6 +1,14 @@
 var express = require('express');
 var User = require('../models').User;
+var Status = require('../models').Status;
 var router = express.Router();
+
+const resetStatus = () => {
+    Status.update({
+        isRegistering: false,
+        userId: null,
+    }, {where: {id: 1}});
+}
 
 router.get('/', function(req, res){
     //console.log('Getting all users');
@@ -19,13 +27,15 @@ router.get('/', function(req, res){
             pacote3: data[3] || '',
             pacote4: data[4] || '',
         },{where: {id: userId}}).then(user => {
-                res.status(200).json(user);
+            res.status(200).json(user);
+            resetStatus();
         });
     }else if (sensor === 'rfid'){
         User.update({
             rfid_tag: data,
         },{where: {id: userId}}).then(user => {
             res.status(200).json(req.query);
+            resetStatus();
         });
     }
 
