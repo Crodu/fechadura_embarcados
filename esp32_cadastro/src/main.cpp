@@ -2,24 +2,30 @@
 #include <Adafruit_Fingerprint.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <LiquidCrystal_I2C.h>
 #include <ArduinoJson.h>
+#include <Wire.h>
 #include <MFRC522.h>
 
 #define BUZZER_PIN 15
+#define LED_SUCESSO 4
+#define LED_FRACASSO 27
+#define LED_RFID 14
+#define LED_BIOMETRIA 2
+#define SS_PIN 21
+#define RST_PIN 22
 
-const char *ssid = "Domotica";
-const char *password = "32132132";
+const char *ssid = "Andre";
+const char *password = "gatopreto";
 
-WiFiServer server(80);
-IPAddress local_IP(192, 168, 0, 200);
-IPAddress gateway(192, 168, 0, 1);
+IPAddress local_IP(192, 168, 1, 200);
+IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress primaryDNS(8, 8, 8, 8);
 IPAddress secondaryDNS(8, 8, 4, 4);
 
 String header;
 String biometria;
+String userRFID;
 
 unsigned long currentTime = millis();
 unsigned long previousTime = 0;
@@ -28,21 +34,17 @@ const long timeoutTime = 3000;
 const uint32_t passwordFingerprint = 0x0;
 Adafruit_Fingerprint fingerprintSensor = Adafruit_Fingerprint(&Serial2, passwordFingerprint);
 
-LiquidCrystal_I2C lcd(0x27,16,2);
-
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 //endereço do servidor na qual sera enviado as informações de cadastro
-String ipServer = "http://192.168.0.101:8080";
+String ipServer = "http://192.168.1.105:8080";
 
 void setupFingerprintSensor();
 boolean cadastroBiometria();
 boolean uploadBiometria(int userId);
-void printLcd(String msg, byte linha);
 boolean cadastroRfid();
 void beepSucesso();
 void beepFracasso();
-boolean cadastroRfid();
 boolean uploadRfid(int userId);
 void setupRfid();
 
@@ -51,13 +53,13 @@ void setup()
     Serial.begin(9600);
     pinMode(BUZZER_PIN, OUTPUT);
     digitalWrite(BUZZER_PIN, HIGH);
+    pinMode(LED_RFID, OUTPUT);
+    pinMode(LED_BIOMETRIA, OUTPUT);
+    pinMode(LED_SUCESSO, OUTPUT);
+    pinMode(LED_FRACASSO, OUTPUT);
 
     setupFingerprintSensor();
     setupRfid();
-
-    lcd.init();
-    lcd.backlight();
-    lcd.clear();
 
     // configurar para escutar as requisiçoes sempre no mesmo ip
     if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
@@ -85,7 +87,7 @@ void setup()
         Serial.println(F("Erro ao apagar banco de digitais"));
     }
 
-    printLcd("Modo Standby",0);
+    Serial.println("MODO STANDBY");
 }
 
 void loop()
@@ -133,16 +135,19 @@ void loop()
                         }
                         if (result){
                             http.end();
-                            printLcd("Sucesso !!!!",0);
+                            digitalWrite(LED_SUCESSO, HIGH);
+                            Serial.println("SUCESSO");
                             beepSucesso();
                             delay(2000);
+                            digitalWrite(LED_SUCESSO, LOW);
                             // ESP.restart();
                         }
                         else {
-                            printLcd("Erro !!!!",0);
-                            printLcd("Tente novamente",1);
+                            digitalWrite(LED_FRACASSO, HIGH);
+                            Serial.println("ERRO");
                             beepFracasso();
                             delay(2000);
+                            digitalWrite(LED_FRACASSO, LOW);
                         }
                     }
                 }
@@ -155,15 +160,18 @@ void loop()
                             result = uploadRfid(userId);
                         }
                         if (result){
+                            digitalWrite(LED_SUCESSO, HIGH);
                             http.end();
-                            printLcd("Sucesso !!!!",0);
+                            Serial.println("SUCESSO");
                             delay(2000);
+                            digitalWrite(LED_SUCESSO, LOW);
                             // ESP.restart();
                         }
                         else {
-                            printLcd("Erro !!!!",0);
-                            printLcd("Tente novamente",1);
+                            digitalWrite(LED_FRACASSO, HIGH);
+                            Serial.println("ERRO");
                             delay(2000);
+                            digitalWrite(LED_FRACASSO, LOW);
                         }
                     }
                 }
@@ -191,49 +199,50 @@ void setupFingerprintSensor()
 
 boolean cadastroBiometria(){
     int location = 1;
-    printLcd("Encoste o dedo no",0);
-    printLcd("sensor",1);
+    Serial.println("ENCOSTE O DEDO");
+    digitalWrite(LED_BIOMETRIA, HIGH);
     while (fingerprintSensor.getImage() != FINGERPRINT_OK)
         ;
+    digitalWrite(LED_BIOMETRIA, LOW);
 
     if (fingerprintSensor.image2Tz(1) != FINGERPRINT_OK)
     {
-        printLcd("Erro image2Tz 1",0);
+        Serial.println("Erro image2Tz 1");
         return false;
     }
-
-    printLcd("Tire o dedo no",0);
-    printLcd("sensor",1);
+    Serial.println("TIRE O DEDO");
     delay(2000);
 
     while (fingerprintSensor.getImage() != FINGERPRINT_NOFINGER)
         ;
 
-    printLcd("Encoste o mesmo",0);
-    printLcd("dedo no sensor",1);
+    digitalWrite(LED_BIOMETRIA, HIGH);
+    Serial.println("ENCOSTE O DEDO");
 
     while (fingerprintSensor.getImage() != FINGERPRINT_OK)
         ;
+    digitalWrite(LED_BIOMETRIA, LOW);
+    Serial.println("TIRE O DEDO");
 
     if (fingerprintSensor.image2Tz(2) != FINGERPRINT_OK)
     {
-        printLcd("Erro image2Tz 2",0);
+        Serial.println("Erro image2Tz 2");
         return false;
     }
 
     if (fingerprintSensor.createModel() != FINGERPRINT_OK)
     {
-        printLcd("Erro createModel",0);
+        Serial.println("Erro createModel");
         return false;
     }
 
     if (fingerprintSensor.storeModel(location) != FINGERPRINT_OK)
     {
-        printLcd("Erro storeModel",0);
+        Serial.println("Erro storeModel");
         return false;
     }
 
-    printLcd("Sucesso!!!",0);
+    Serial.println("SUCESSO");
     return true;
 }
 
@@ -308,13 +317,6 @@ boolean uploadBiometria(int userId){
     return true;
 }
 
-void printLcd(String msg, byte linha){
-    Serial.println(msg);
-    lcd.clear();
-    lcd.setCursor(0,linha);
-    lcd.print(msg);
-}
-
 boolean uploadRfid(int userId){
     if ((WiFi.status() == WL_CONNECTED))
     {
@@ -346,15 +348,16 @@ void setupRfid(){
 }
 
 boolean cadastroRfid(){
+    digitalWrite(LED_RFID, HIGH);
     MFRC522::MIFARE_Key key;
     for (byte i = 0; i < 6; i++) key.keyByte[i] = 0xFF;
     byte block;
     byte len;
     MFRC522::StatusCode status;
-    if ( ! mfrc522.PICC_IsNewCardPresent()) {
-        return false;
-    }
+    while (! mfrc522.PICC_IsNewCardPresent());
+
     if ( ! mfrc522.PICC_ReadCardSerial()) {
+        digitalWrite(LED_RFID, LOW);
         return false;
     }
     String userid;
@@ -364,6 +367,7 @@ boolean cadastroRfid(){
     mfrc522.PICC_HaltA();
     mfrc522.PCD_StopCrypto1();
     userRFID = userid;
+    digitalWrite(LED_RFID, LOW);
     return true;
 }
 
