@@ -60,7 +60,7 @@ TaskHandle_t Task2;
 String ipServer = "http://192.168.1.105:8080";
 
 void setupFingerprintSensor();
-void getAllFingerprints();
+void getFingerprints(int firstPos, int lastPos);
 void Task2code(void *pvParameters);
 uint8_t uploadFingerprintTemplate(uint8_t packet1[130], uint8_t packet2[130], uint8_t packet3[130], uint8_t packet4[108], int posicao);
 void beepSucesso();
@@ -183,7 +183,7 @@ void Task2code(void *pvParameters)
     {
         Serial.println(F("Erro ao apagar banco de digitais"));
     }
-    // getAllFingerprints();
+    // getFingerprints(1, 150);
 
     for (;;)
     {
@@ -245,103 +245,20 @@ void Task2code(void *pvParameters)
 
             if (posicao != lastpos)
             {
-                for (int i = lastpos+1; i <= posicao; i++)
-                {
-                    Serial.println(ipServer + "/users/template?pos=" + String(i));
-                    http.begin(ipServer + "/users/template?pos=" + String(i));
-                    int httpCode = http.GET();
-
-                    if (httpCode > 0)
-                    {
-                        Serial.print("httpCode: ");
-                        Serial.println(httpCode);
-                        String payload = http.getString();
-
-                        DynamicJsonDocument doc(2048);
-                        doc["heap"] = ESP.getFreeHeap();
-                        deserializeJson(doc, payload);
-                        int posicao = doc["posicao"];
-                        String pacote1 = doc["pacote1"];
-                        String pacote2 = doc["pacote2"];
-                        String pacote3 = doc["pacote3"];
-                        String pacote4 = doc["pacote4"];
-
-                        uint8_t packed1[130];
-                        uint8_t packed2[130];
-                        uint8_t packed3[130];
-                        uint8_t packed4[108];
-
-                        int inicio = 0;
-                        int fim = -1;
-                        uint8_t uint = 0;
-                        for (size_t i = 0; i < 130; i++)
-                        {
-                            inicio = fim;
-                            fim = pacote1.indexOf(",",inicio+1);
-                            uint = pacote1.substring(inicio+1,fim).toInt();
-                            packed1[i]=uint;
-                        }
-                        
-                        inicio = 0;
-                        fim = -1;
-                        for (size_t i = 0; i < 130; i++)
-                        {
-                            inicio = fim;
-                            fim = pacote2.indexOf(",",inicio+1);
-                            uint = pacote2.substring(inicio+1,fim).toInt();
-                            packed2[i]=uint;
-                        }
-
-                        inicio = 0;
-                        fim = -1;
-                        for (size_t i = 0; i < 130; i++)
-                        {
-                            inicio = fim;
-                            fim = pacote3.indexOf(",",inicio+1);
-                            uint = pacote3.substring(inicio+1,fim).toInt();
-                            packed3[i]=uint;
-                        }
-
-                        inicio = 0;
-                        fim = -1;
-                        for (size_t i = 0; i < 108; i++)
-                        {
-                            inicio = fim;
-                            fim = pacote4.indexOf(",",inicio+1);
-                            uint = pacote4.substring(inicio+1,fim).toInt();
-                            packed4[i]=uint;
-                        }
-
-                        if (posicao == NULL)
-                        {
-                            Serial.println("posicao igual a null");
-                            break;
-                        }
-                        else
-                        {
-                            lastpos = posicao;
-                            uploadFingerprintTemplate(packed1, packed2, packed3, packed4, posicao);
-                        }
-                    }
-                    else
-                    {
-                        Serial.println("Error on HTTP request");
-                    }
-                    http.end();
-                }
+                getFingerprints(lastpos, posicao);
                 beepSincroniza();
             }
         }
     }
 }
 
-void getAllFingerprints()
+void getFingerprints(int firstPos, int lastPos)
 {
     Serial.println("get all fingerprints");
     if (WiFi.status() == WL_CONNECTED)
     {
         HTTPClient http;
-        for (int i = 1; i < 5; i++)
+        for (int i = firstPos; i < lastPos; i++)
         {
             Serial.println(ipServer + "/users/template?pos=" + String(i));
             http.begin(ipServer + "/users/template?pos=" + String(i));
