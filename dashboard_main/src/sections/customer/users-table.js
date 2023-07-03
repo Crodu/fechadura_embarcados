@@ -19,6 +19,7 @@ import {
 import { Scrollbar } from 'src/components/scrollbar';
 import { getInitials } from 'src/utils/get-initials';
 import PlusIcon from '@heroicons/react/24/solid/PlusIcon';
+import TrashIcon from '@heroicons/react/24/solid/TrashIcon';
 
 export const UsersTable = (props) => {
   const {
@@ -35,6 +36,7 @@ export const UsersTable = (props) => {
     selected = [],
     setCommand = () => {},
     auth,
+    onDelete
   } = props;
 
   const selectedSome = (selected.length > 0) && (selected.length < items.length);
@@ -159,6 +161,15 @@ export const UsersTable = (props) => {
                           Add
                         </Button>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() => {onDelete(user.id)}}
+                      > 
+                        <SvgIcon fontSize="small">
+                            <TrashIcon />
+                        </SvgIcon>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );

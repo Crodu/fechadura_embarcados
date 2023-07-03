@@ -18,6 +18,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { items } from './config';
 import { SideNavItem } from './side-nav-item';
 import { useAuth } from 'src/hooks/use-auth';
+import { setCommand } from 'src/contexts/api';
 
 export const SideNav = (props) => {
   const { open, onClose } = props;
@@ -25,6 +26,14 @@ export const SideNav = (props) => {
   const pathname = usePathname();
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
   const currentStatus = auth.status;
+
+  const resetStatus = () => {
+    setCommand({
+      currentSensor: '',
+      isRegistering: false,
+      userId: 0,
+    }, auth);
+  }
 
   const content = (
     <Scrollbar
@@ -138,6 +147,16 @@ export const SideNav = (props) => {
             }}
           >
             Update
+          </Button>
+          <Button
+            fullWidth
+            sx={{ mt: 2 }}
+            variant="contained"
+            onClick={() => {
+              resetStatus()
+            }}
+          >
+            Clear
           </Button>
         </Box>
       </Box>

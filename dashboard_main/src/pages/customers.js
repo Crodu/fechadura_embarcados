@@ -43,6 +43,16 @@ const Page = () => {
     fetchUsers();
   }, [submitting]);
 
+  const deleteUser = async (id) => {
+    const response = await fetch(`${BACKEND_URL}/users/`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userId: id })
+    });
+  }
+
   const useCustomers = (page, rowsPerPage) => {
     return useMemo(
       () => {
@@ -125,6 +135,7 @@ const Page = () => {
               selected={customersSelection.selected}
               setCommand={setCommand}
               auth={auth}
+              onDelete={deleteUser}
             />
           </Stack>
         </Container>
@@ -132,6 +143,7 @@ const Page = () => {
           open={open}
           onSubmit={() => setSubmitting(submitting => !submitting)}
           setOpen={setOpen}
+          users={users}
         />
       </Box>
     </>

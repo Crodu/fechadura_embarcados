@@ -8,6 +8,7 @@ module.exports = function(sequelize, Sequalize) {
         pacote2: Sequalize.STRING,
         pacote3: Sequalize.STRING,
         pacote4: Sequalize.STRING,
+        status: Sequalize.BOOLEAN,
     },{
         timestamps: false
     });

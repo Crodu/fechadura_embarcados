@@ -18,11 +18,24 @@ const style = {
     p: 4,
   };
 
-export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
+export const ModalAdd = ({open, setOpen, props, onSubmit, users}) => {
 
     const handleClose = () => {
         setOpen(false);
     };
+
+    Yup.addMethod(Yup.string, "passwordUsed", function passwordUsed (errorMessage) {
+      return this.test(`test-password-used`, errorMessage, function (value) {
+        const { path, createError } = this;
+
+        console.log(this)
+    
+        return (
+          (value && !users.map(u => (u.password)).includes(value)) ||
+          createError({ path, message: errorMessage })
+        );
+      });
+    });
 
     const formik = useFormik({
         initialValues: {
@@ -38,6 +51,7 @@ export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
             .required('Name is required'),
           password: Yup
             .string()
+            .passwordUsed('Password is already been used')
             .max(255)
             .required('Password is required')
         }),
@@ -52,6 +66,7 @@ export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
               });
             handleClose();
             onSubmit();
+            helpers.resetForm();
           } catch (err) {
             helpers.setStatus({ success: false });
             helpers.setErrors({ submit: err.message });
@@ -120,7 +135,7 @@ export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
                             type="number"
                             value={formik.values.password}
                             />
-                            <TextField
+                            {/* <TextField
                             error={!!(formik.touched.rfid_tag && formik.errors.rfid_tag)}
                             fullWidth
                             helperText={formik.touched.rfid_tag && formik.errors.rfid_tag}
@@ -129,7 +144,7 @@ export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
                             onBlur={formik.handleBlur}
                             onChange={formik.handleChange}
                             value={formik.values.rfid_tag}
-                            />
+                            /> */}
                             
                         </Stack>
                         {formik.errors.submit && (
@@ -162,9 +177,11 @@ export const ModalAdd = ({open, setOpen, props, onSubmit}) => {
 ModalAdd.propTypes = {
     open: PropTypes.bool,
     setOpen: PropTypes.func,
+    users: PropTypes.array,
 }
 
 ModalAdd.defaultProps = {
     open: false,
     setOpen: () => {},
+    users: [],
 }
