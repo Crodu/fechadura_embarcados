@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <Keypad.h>
 #include <MFRC522.h>
+#include "api.h"
 
 #define BUZZER_PIN 15
 #define RELE_PIN 2
@@ -29,11 +30,11 @@ uint8_t colPins[COLS] = { 26, 25, 33, 32 };
 uint8_t rowPins[ROWS] = { 13, 12, 14, 27 };
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-const char *ssid = "Andre";
+const char *ssid = "Soratto C12";
 const char *password = "gatopreto";
 
-IPAddress local_IP(192, 168, 1, 201);
-IPAddress gateway(192, 168, 1, 1);
+IPAddress local_IP(192, 168, 0, 201);
+IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress primaryDNS(8, 8, 8, 8);
 IPAddress secondaryDNS(8, 8, 4, 4);
@@ -57,7 +58,11 @@ boolean cadastro = false;
 
 TaskHandle_t Task2;
 
-String ipServer = "http://192.168.1.105:8080";
+String ipServer = "http://192.168.0.88:8080";
+
+HTTPClient httpClient;
+
+Api api(ipServer, httpClient);
 
 void setupFingerprintSensor();
 void getFingerprints(int firstPos, int lastPos);
@@ -68,7 +73,6 @@ void beepFracasso();
 void beepSincroniza();
 void setupRfid();
 boolean handleRfid();
-boolean handleTeclado();
 
 void autentica(int tipo);
 
@@ -84,6 +88,8 @@ void setup()
     pinMode(LED_BRANCO, OUTPUT);
 
     setupRfid();
+
+    httpClient.setTimeout(5000);
 
     if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
     {
@@ -215,20 +221,12 @@ void Task2code(void *pvParameters)
         {
             Serial.println("sensor pir acionado");
             previousTime = currentTime;
-            HTTPClient http;
 
-            http.begin(ipServer + "/users/lastpos");
-            int httpCode = http.GET();
+            String payload = api.get("/users/lastpos", "");
             int posicao = 0;
 
-            if (httpCode > 0)
+            if (payload != NULL)
             {
-                Serial.print("httpCode: ");
-                Serial.println(httpCode);
-                String payload = http.getString();
-                Serial.print("payload: ");
-                Serial.println(payload);
-
                 DynamicJsonDocument doc(100);
                 doc["heap"] = ESP.getFreeHeap();
                 deserializeJson(doc, payload);
@@ -241,7 +239,6 @@ void Task2code(void *pvParameters)
             {
                 Serial.println("Error on HTTP request");
             }
-            http.end();
 
             if (posicao != lastpos)
             {
@@ -257,19 +254,12 @@ void getFingerprints(int firstPos, int lastPos)
     Serial.println("get all fingerprints");
     if (WiFi.status() == WL_CONNECTED)
     {
-        HTTPClient http;
         for (int i = firstPos; i < lastPos; i++)
         {
-            Serial.println(ipServer + "/users/template?pos=" + String(i));
-            http.begin(ipServer + "/users/template?pos=" + String(i));
-            int httpCode = http.GET();
+            String payload = api.get("/users/template?pos=", String(i));
 
-            if (httpCode > 0)
+            if (payload != NULL)
             {
-                Serial.print("httpCode: ");
-                Serial.println(httpCode);
-                String payload = http.getString();
-
                 DynamicJsonDocument doc(2048);
                 doc["heap"] = ESP.getFreeHeap();
                 deserializeJson(doc, payload);
@@ -340,7 +330,6 @@ void getFingerprints(int firstPos, int lastPos)
             {
                 Serial.println("Error on HTTP request");
             }
-            http.end();
         }
     }
     Serial.println("saiu funcao");
@@ -351,26 +340,28 @@ uint8_t uploadFingerprintTemplate(uint8_t packet1[130], uint8_t packet2[130], ui
 {
     Serial.println("------------------------------------");
     Serial.println("upload biometria");
+
     setupFingerprintSensor();
 
-    uint8_t p = fingerprintSensor.uploadModelPercobaan(packet1, packet2, packet3, packet4);
-    switch (p)
-    {
-    case FINGERPRINT_OK:
+    uint8_t pfp = fingerprintSensor.uploadModelPercobaan(packet1, packet2, packet3, packet4);
+
+    Serial.println(pfp);
+
+    // change switch to if else
+    if (pfp == FINGERPRINT_OK){
         Serial.print("Template ");
         Serial.println(" loaded");
-        break;
-    case FINGERPRINT_PACKETRECIEVEERR:
+    }else if (pfp == FINGERPRINT_PACKETRECIEVEERR){
         Serial.println("Communication error");
-        return p;
-    default:
+        return pfp;
+    }else {
         Serial.print("Unknown error ");
-        Serial.println(p);
-        return p;
+        Serial.println(pfp);
+        return pfp;
     }
 
     Serial.println("passou");
-    p = fingerprintSensor.storeModel(posicao);
+    uint16_t p = fingerprintSensor.storeModel(posicao);
     switch (p)
     {
     case FINGERPRINT_OK:
@@ -447,27 +438,22 @@ void autentica(int tipo){
 
     if (WiFi.status() == WL_CONNECTED)
     {
-        HTTPClient http;
-        http.setTimeout(5000);
+
+        bool result = false;
 
         if (tipo == 0){
-            http.begin(ipServer + "/users/auth?password=" + senhaTeclado);
+            result = api.send("/users/auth?password=", senhaTeclado);
         }
         else if(tipo == 1){
-            http.begin(ipServer+"/users/auth?rfid="+userRFID);
+            result = api.send("/users/auth?rfid=", userRFID);
         }
         else if(tipo == 2){
-            http.begin(ipServer+"/users/auth?posicao="+posicaoBiometria);
+            result = api.send("/users/auth?posicao=", String(posicaoBiometria));
         }
-        int httpCode = http.GET();
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpCode);
 
-        if (httpCode > 0)
+        if (result)
         {
-            Serial.print("httpCode: ");
-            Serial.println(httpCode);
-            if (httpCode == 200){
+            if (result){
                 Serial.println("Sucesso");
                 beepSucesso();
             }
@@ -480,7 +466,6 @@ void autentica(int tipo){
         {
             Serial.println("Error on HTTP request");
         }
-        http.end();
     }
     senhaTeclado = "";
 }
